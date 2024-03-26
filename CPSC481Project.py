@@ -5,14 +5,16 @@ from utils import *
 import random
 
 # https://github.com/aimacode/aima-python/blob/master/search.py#L15
-# now accurately shows which numbers are solved
+# final version of the code
 
 #create problem class
 class Problem:
     def __init__(self, initial, goal=None):
         self.initial = initial
-        self.goal = goal
 
+    # this function returns the actions that can be performed on the current state 
+    # find empty cell then check if a number is valid
+    # if it is then add it to the valid actions list
     def actions(self, state):
         row, col = find_empty_cell(state)
         if row is None:
@@ -31,6 +33,9 @@ class Problem:
         return new_state
 
     # if empty string is found then return false (aka goal not met)
+    # since the full puzzle is randomly generated, it will always have a solution
+    # that follows the rules of sudoku, so with that the goal state we are trying to look for
+    # is if the board has been completely filled
     def goal_test(self, state):
         for row in state:
             if "" in row:
@@ -91,7 +96,8 @@ def is_valid_move(grid, row, col, num):
 
     return True
 
-# this function will return row and column of an empty cell
+# this function will return row and column 
+# of the first empty cell it finds
 def find_empty_cell(grid):
     for row in range(9):
         for col in range(9):
@@ -107,12 +113,21 @@ def depth_first_graph_search(problem):
     frontier = [Node(problem.initial)]
 
     explored = set()
+    # writing a check to see how many nodes were expanded 
+    # and how many total nodes there were
+    expanded_nodes = 0
+    total_nodes = 1
     while frontier:
         node = frontier.pop()
+        expanded_nodes += 1
         if problem.goal_test(node.state):
+            print("Number of nodes expanded: {}/{}".format(expanded_nodes, total_nodes))
             return node
         explored.add(tuple(map(tuple, node.state))) 
         frontier.extend(child for child in node.expand(problem) if tuple(map(tuple, child.state)) not in explored and child not in frontier)
+        # when a node is popped add the amount of child nodes
+        # to the total nodes
+        total_nodes += len(frontier)
     return None
 
 # this function will create a problem space
@@ -122,11 +137,24 @@ def sudoku_solver(initial_state):
     problem = Problem(initial_state)
     solution_node = depth_first_graph_search(problem)
     if solution_node:
-        solution = solution_node.state
-        return solution  # Return the solution
+        solution_path = solution_node.path()
+        solution_actions = solution_path[1:]
+        solution = initial_state
+        print("Solution Path:")
+        for action in solution_actions:
+            print("Action:", action.action)
+            solution = problem.result(solution, action.action)
+        print("Solved Sudoku Grid:")
+        print_grid(solution) 
+        return solution 
     else:
-        return None  # Return None if no solution exists
+        print("No solution found.")
+        return None
 
+def print_grid(grid):
+    for row in grid:
+        print(" ".join(str(cell) if cell != "" else "." for cell in row))
+    print()
 
 
 # Everything below this line is additional tech stack just to develop a UI to show off the DFS search algorithm
